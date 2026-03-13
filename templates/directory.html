@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="sort-bar">
+  <span class="sort-label">Sort:</span>
+  <button class="sort-btn" data-sort="mtime-desc" onclick="setSort('mtime','desc')">Newest</button>
+  <button class="sort-btn" data-sort="mtime-asc"  onclick="setSort('mtime','asc')">Oldest</button>
+  <button class="sort-btn" data-sort="name-asc"   onclick="setSort('name','asc')">A → Z</button>
+  <button class="sort-btn" data-sort="name-desc"  onclick="setSort('name','desc')">Z → A</button>
+</div>
+
+{% if recent %}
+<div class="section-head">Recently Modified</div>
+<ul class="filelist">
+  {% for f in recent %}
+  <li>
+    <a href="{{ f.url }}">{{ f.title }}</a>
+    <span class="mtime">{{ f.mtime }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if dirs %}
+<div class="section-head">Directories</div>
+<ul class="filelist">
+  {% for d in dirs %}
+  <li data-name="{{ d.name|lower }}" data-mtime="{{ d.mtime_raw }}">
+    <a href="{{ d.link }}">{{ d.display }}</a>
+    {% if d.title %}<span class="item-title">— {{ d.title }}</span>{% else %}<span class="item-title"></span>{% endif %}
+    <span class="mtime">{{ d.mtime }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if files %}
+<div class="section-head">Files</div>
+<ul class="filelist">
+  {% for f in files %}
+  <li data-name="{{ f.name|lower }}" data-mtime="{{ f.mtime_raw }}">
+    <a href="{{ f.link }}">{{ f.display }}</a>
+    {% if f.title %}<span class="item-title">— {{ f.title }}</span>{% else %}<span class="item-title"></span>{% endif %}
+    <span class="mtime">{{ f.mtime }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% endblock %}

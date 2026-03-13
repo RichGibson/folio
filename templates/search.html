@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if not query %}
+<p style="color:var(--text-muted)">Enter a search term above.</p>
+{% else %}
+<div class="section-head">
+  {{ count }} result{{ 's' if count != 1 else '' }} for &ldquo;{{ query }}&rdquo;
+</div>
+
+{% if results %}
+  {% for r in results %}
+  <div class="result">
+    <a href="{{ r.url }}">{{ r.title }}</a>
+    <div class="path">{{ r.path }}</div>
+    <div class="snippet">{{ r.snippet }}</div>
+  </div>
+  {% endfor %}
+{% else %}
+<p style="color:var(--text-muted)">No results found.</p>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

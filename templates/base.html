@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} — Folio</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="topnav">
+  <button class="nav-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+  <a class="brand" href="/">Folio</a>
+  <div class="search-wrap">
+    <form method="get" action="/search" style="display:flex;flex:1">
+      <input type="search" name="q" placeholder="Search notes…" value="{{ search_query }}" />
+      <button type="submit" class="search-btn">Search</button>
+    </form>
+  </div>
+  <button class="nav-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+</nav>
+
+<div class="layout" id="layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">Directories</div>
+    <nav class="tree">{{ sidebar|safe }}</nav>
+  </aside>
+
+  <main class="main">
+    {% if breadcrumbs %}
+    <nav class="breadcrumb">{{ breadcrumbs|safe }}</nav>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="/static/folio.js"></script>
+</body>
+</html>
