@@ -320,6 +320,38 @@ article table { border-collapse: collapse; width: 100%; }
 article th, article td { border: 1px solid var(--border); padding: 0.4em 0.7em; text-align: left; }
 article th { background: var(--surface-alt); }
 
+/* ── Sort bar ── */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.sort-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+.sort-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+.sort-btn:hover { background: var(--surface-hover); }
+.sort-btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ── Responsive ── */
 @media (max-width: 680px) {
   .layout { grid-template-columns: 1fr; }
@@ -369,7 +401,40 @@ SCRIPTS = """
     if (layout && localStorage.getItem(SIDEBAR_KEY) === 'closed') {
       layout.classList.add('sidebar-hidden');
     }
+    // Restore sort preference on directory pages
+    var saved = localStorage.getItem('folio-sort') || 'mtime-desc';
+    var parts = saved.split('-');
+    if (parts.length === 2 && document.querySelector('.sort-btn')) {
+      applySort(parts[0], parts[1], false);
+    }
   });
+
+  window.setSort = function (key, dir) {
+    applySort(key, dir, true);
+  };
+
+  function applySort(key, dir, save) {
+    // Update button states
+    document.querySelectorAll('.sort-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.sort === key + '-' + dir);
+    });
+    // Sort every filelist on the page
+    document.querySelectorAll('ul.filelist').forEach(function (ul) {
+      var items = Array.from(ul.querySelectorAll('li[data-name]'));
+      if (!items.length) return;
+      items.sort(function (a, b) {
+        var cmp;
+        if (key === 'name') {
+          cmp = a.dataset.name.localeCompare(b.dataset.name, undefined, {sensitivity: 'base'});
+        } else {
+          cmp = parseFloat(a.dataset.mtime) - parseFloat(b.dataset.mtime);
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+      items.forEach(function (item) { ul.appendChild(item); });
+    });
+    if (save) localStorage.setItem('folio-sort', key + '-' + dir);
+  }
 }());
 </script>
 """
@@ -678,8 +743,9 @@ class FolioHandler(SimpleHTTPRequestHandler):
             out = '<ul class="filelist">'
             for e in entries:
                 title_span = f'<span class="item-title">— {escape(e["title"])}</span>' if e["title"] else '<span class="item-title"></span>'
+                raw_mtime = str(os.path.getmtime(e["fullname"]))
                 out += (
-                    f'<li>'
+                    f'<li data-name="{escape(e["name"].lower())}" data-mtime="{raw_mtime}">'
                     f'<a href="{urllib.parse.quote(e["link"])}">{escape(e["display"])}</a>'
                     f'{title_span}'
                     f'<span class="mtime">{e["mtime"]}</span>'
@@ -688,9 +754,21 @@ class FolioHandler(SimpleHTTPRequestHandler):
             out += '</ul>'
             return out
 
+        sort_bar = (
+            '<div class="sort-bar">'
+            '<span class="sort-label">Sort:</span>'
+            '<button class="sort-btn" data-sort="mtime-desc" onclick="setSort(\'mtime\',\'desc\')">Newest</button>'
+            '<button class="sort-btn" data-sort="mtime-asc"  onclick="setSort(\'mtime\',\'asc\')">Oldest</button>'
+            '<button class="sort-btn" data-sort="name-asc"   onclick="setSort(\'name\',\'asc\')">A → Z</button>'
+            '<button class="sort-btn" data-sort="name-desc"  onclick="setSort(\'name\',\'desc\')">Z → A</button>'
+            '</div>'
+        )
+
         parts = []
         if is_root:
             parts.append(self._recent_files_html())
+
+        parts.append(sort_bar)
 
         if dirs:
             parts.append('<div class="section-head">Directories</div>')
