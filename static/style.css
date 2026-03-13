@@ -187,6 +187,12 @@ a:hover { text-decoration: underline; }
 
 .tree-children { padding-left: 14px; border-left: 1px solid var(--border-light); margin-left: 19px; }
 
+.tree details summary a.current,
+.tree-leaf a.current {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .tree-leaf {
   display: flex;
   align-items: center;

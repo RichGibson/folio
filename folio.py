@@ -88,7 +88,7 @@ class FolioHandler(SimpleHTTPRequestHandler):
                     pass
         return ""
 
-    def _dir_tree_html(self, path, url_base, depth=0):
+    def _dir_tree_html(self, path, url_base, depth=0, current_path=""):
         try:
             entries = sorted(
                 [e for e in os.scandir(path) if e.is_dir() and not e.name.startswith(".")],
@@ -105,17 +105,23 @@ class FolioHandler(SimpleHTTPRequestHandler):
             dir_url = url_base.rstrip("/") + "/" + urllib.parse.quote(entry.name) + "/"
             desc = self._get_readme_desc(entry.path)
             desc_span = f'<span class="readme-desc">{escape(desc)}</span>' if desc else ""
-            children = self._dir_tree_html(entry.path, dir_url, depth + 1)
-            open_attr = " open" if depth == 0 else ""
+            children = self._dir_tree_html(entry.path, dir_url, depth + 1, current_path)
             mtime_raw = entry.stat().st_mtime
             data = f'data-name="{escape(entry.name.lower())}" data-mtime="{mtime_raw}"'
+
+            is_current = current_path == dir_url
+            is_ancestor = current_path.startswith(dir_url) and not is_current
+            current_class = ' class="current"' if is_current else ""
+            # Open if: top-level, currently selected, or ancestor of current path
+            force_open = depth == 0 or is_current or is_ancestor
+            open_attr = " open" if force_open else ""
 
             if children:
                 items += (
                     f'<details {data}{open_attr}>'
                     f'<summary>'
                     f'<span class="toggle-icon"></span>'
-                    f'<a href="{escape(dir_url)}">{escape(entry.name)}</a>'
+                    f'<a href="{escape(dir_url)}"{current_class}>{escape(entry.name)}</a>'
                     f'{desc_span}'
                     f'</summary>'
                     f'<div class="tree-children">{children}</div>'
@@ -124,14 +130,14 @@ class FolioHandler(SimpleHTTPRequestHandler):
             else:
                 items += (
                     f'<div class="tree-leaf" {data}>'
-                    f'<a href="{escape(dir_url)}">{escape(entry.name)}</a>'
+                    f'<a href="{escape(dir_url)}"{current_class}>{escape(entry.name)}</a>'
                     f'{desc_span}'
                     f'</div>\n'
                 )
         return items
 
-    def _sidebar_html(self):
-        return self._dir_tree_html(ROOT, "/")
+    def _sidebar_html(self, current_path=""):
+        return self._dir_tree_html(ROOT, "/", current_path=current_path)
 
     # -- Title extraction ----------------------------------------------------
 
@@ -195,11 +201,15 @@ class FolioHandler(SimpleHTTPRequestHandler):
         html_content = md.convert(content)
         title = self.get_md_title(fullpath) or os.path.basename(fullpath)
 
+        # Highlight the parent directory in the sidebar
+        parent_url = "/" + urllib.parse.quote(
+            os.path.dirname(url_path).strip("/")
+        ).rstrip("/") + "/"
         send_html(self, render("article.html",
             title=title,
             content=html_content,
             breadcrumbs=make_breadcrumbs(url_path),
-            sidebar=self._sidebar_html(),
+            sidebar=self._sidebar_html(parent_url),
             search_query="",
         ))
 
@@ -225,6 +235,7 @@ class FolioHandler(SimpleHTTPRequestHandler):
             sidebar=self._sidebar_html(),
             search_query=q,
         ))
+
 
     def _do_search(self, q):
         results = []
@@ -287,13 +298,14 @@ class FolioHandler(SimpleHTTPRequestHandler):
         recent = self._recent_files() if is_root else []
         title = "Folio" if is_root else url_path.rstrip("/").split("/")[-1]
 
+        current_dir_url = "/" + urllib.parse.quote(url_path.strip("/")).rstrip("/") + "/"
         html = render("directory.html",
             title=title,
             dirs=dirs,
             files=files,
             recent=recent,
             breadcrumbs=make_breadcrumbs(url_path),
-            sidebar=self._sidebar_html(),
+            sidebar=self._sidebar_html(current_dir_url),
             search_query="",
         )
 
