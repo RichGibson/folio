@@ -107,10 +107,12 @@ class FolioHandler(SimpleHTTPRequestHandler):
             desc_span = f'<span class="readme-desc">{escape(desc)}</span>' if desc else ""
             children = self._dir_tree_html(entry.path, dir_url, depth + 1)
             open_attr = " open" if depth == 0 else ""
+            mtime_raw = entry.stat().st_mtime
+            data = f'data-name="{escape(entry.name.lower())}" data-mtime="{mtime_raw}"'
 
             if children:
                 items += (
-                    f'<details{open_attr}>'
+                    f'<details {data}{open_attr}>'
                     f'<summary>'
                     f'<span class="toggle-icon"></span>'
                     f'<a href="{escape(dir_url)}">{escape(entry.name)}</a>'
@@ -121,7 +123,7 @@ class FolioHandler(SimpleHTTPRequestHandler):
                 )
             else:
                 items += (
-                    f'<div class="tree-leaf">'
+                    f'<div class="tree-leaf" {data}>'
                     f'<a href="{escape(dir_url)}">{escape(entry.name)}</a>'
                     f'{desc_span}'
                     f'</div>\n'
