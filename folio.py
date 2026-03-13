@@ -210,6 +210,16 @@ def send_html(handler, html):
 
 class FolioHandler(SimpleHTTPRequestHandler):
 
+    # -- Path translation (makes --root work) --------------------------------
+
+    def translate_path(self, path):
+        """Map URL path to filesystem path under ROOT (not cwd)."""
+        path = urllib.parse.unquote(path.split("?", 1)[0].split("#", 1)[0])
+        path = os.path.normpath(path)
+        # Strip leading slash so join works correctly
+        parts = [p for p in path.split("/") if p and p not in (".", "..")]
+        return os.path.join(ROOT, *parts) if parts else ROOT
+
     # -- Title extraction ----------------------------------------------------
 
     def get_md_title(self, fullpath):
