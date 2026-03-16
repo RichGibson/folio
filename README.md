@@ -1,8 +1,12 @@
 # Folio
 
+
+
 A personal knowledge base navigator — a lightweight local web server that makes a directory of Markdown files browsable, readable, and searchable in the browser.
 
 Built for people who keep their notes, journals, and reference material as plain `.md` files and want a better way to navigate them than a file manager.
+
+The idea is tomake my life better.
 
 ---
 
